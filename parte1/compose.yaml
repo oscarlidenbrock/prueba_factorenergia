@@ -42,6 +42,8 @@ services:
     build: app
     ports:
       - "8000:8000"
+    volumes:
+        - ./app:/app
     depends_on:
       db-init:
         condition: service_completed_successfully
