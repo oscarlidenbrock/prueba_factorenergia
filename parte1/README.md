@@ -56,7 +56,7 @@ Nuestras aplicaciones usan principalmente **Yii2**, así que es la opción prefe
 
 ## Entregables
 
-1. Código fuente y declaración de dependencias (`composer.json`).
+1. Código fuente y declaración de dependencias (`app/composer.json`).
 2. Instrucciones para ejecutar la solución y un ejemplo de petición.
 3. Una explicación breve de las decisiones principales.
 

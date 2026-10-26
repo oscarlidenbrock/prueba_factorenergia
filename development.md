@@ -5,4 +5,6 @@ de la prueba técnica.
 
 ## PARTE 1
 
-* Inicializar docker con el contenedor de PHP 8.3.36 y SQL Server 2022.
+- Inicializar Docker con PHP 8.3 y SQL Server 2022.
+- Añadir `libonig-dev` y `mbstring` al Dockerfile.
+- Crear `app/composer.json`.
