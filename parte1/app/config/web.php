@@ -26,6 +26,13 @@ return [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'enableStrictParsing' => false,
+            'rules' => [
+                [
+                    'pattern' => 'lecturas',
+                    'route' => 'lectura/create',
+                    'verb' => ['POST'],
+                ],
+            ],
         ],
     ],
 ];
