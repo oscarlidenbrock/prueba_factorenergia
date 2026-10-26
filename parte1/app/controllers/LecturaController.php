@@ -42,6 +42,14 @@ final class LecturaController extends Controller
             return $this->error(400, 'invalid_date', 'La fecha debe tener formato YYYY-MM-DD y ser válida.');
         }
 
+        if ($date > gmdate('Y-m-d')) {
+            return $this->error(
+                422,
+                'future_reading',
+                'La fecha de lectura no puede estar en el futuro.'
+            );
+        }
+
         $db = Yii::$app->db;
         $contracts = $db->createCommand(
             'SELECT id, estado, fecha_alta, fecha_baja, digitos_contador
