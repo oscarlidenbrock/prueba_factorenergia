@@ -6,8 +6,8 @@ La prueba contiene dos ejercicios independientes:
 
 | Carpeta | Ejercicio |
 |---------|-----------|
-| `parte1/` | Construir una API en PHP para recibir lecturas de contador |
-| `parte2/` | Investigar una incidencia en la facturación sobre SQL Server |
+| `../parte1` | Construir una API en PHP para recibir lecturas de contador |
+| `../parte2` | Investigar una incidencia en la facturación sobre SQL Server |
 
 Los dos ejercicios se basan en la operativa de una comercializadora de electricidad. No necesitas conocer el sector: lo imprescindible está en el glosario y en el `README.md` de cada parte. Lo que no está explicado forma parte de las decisiones que esperamos que tomes.
 

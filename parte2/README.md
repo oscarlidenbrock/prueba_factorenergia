@@ -23,7 +23,7 @@ El `compose.yaml` levanta un SQL Server 2022 y carga automáticamente la base de
 | `reclamaciones` | Reclamaciones recibidas desde el 5 de octubre |
 | `sp_facturar_periodo` | Procedimiento almacenado que genera las facturas de un mes |
 
-En `logs/` tienes la salida de Jenkins del proceso de facturación mensual.
+En `logs` tienes la salida de Jenkins del proceso de facturación mensual.
 
 Para simplificar, los importes no incluyen impuestos: el total de una factura es el consumo por el precio del kWh más el término fijo mensual.
 
