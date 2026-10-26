@@ -1,0 +1,33 @@
+# Composer dependencies
+/vendor/
+**/vendor/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Yii runtime files and published assets
+/parte1/app/runtime/
+/parte1/app/web/assets/
+
+# Test and analysis caches
+.phpunit.cache/
+.phpunit.result.cache
+.php-cs-fixer.cache
+**/.phpunit.cache/
+**/.phpunit.result.cache
+**/.php-cs-fixer.cache
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS and Windows
+.DS_Store
+Thumbs.db
+Desktop.ini
