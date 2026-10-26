@@ -7,13 +7,40 @@ namespace app\controllers;
 use DateTimeImmutable;
 use Yii;
 use yii\db\Transaction;
+use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 
+/** Receives cumulative meter readings and applies contract and retry rules. */
 final class LecturaController extends Controller
 {
+    /** @var bool JSON clients do not use browser CSRF tokens. */
     public $enableCsrfValidation = false;
 
+    /**
+     * Handles POST /lecturas, mapping malformed JSON to invalid_json and other failures to internal_error.
+     *
+     * @return array<string, string> The JSON response body.
+     */
     public function actionCreate(): array
+    {
+        try {
+            return $this->createReading();
+        } catch (BadRequestHttpException $exception) {
+            return $this->error(400, 'invalid_json', 'El cuerpo de la petición debe contener un JSON válido.');
+        } catch (\Throwable $exception) {
+            Yii::error($exception->getMessage(), __METHOD__);
+
+            return $this->error(500, 'internal_error', 'No se ha podido procesar la lectura.');
+        }
+    }
+
+    /**
+     * Validates the payload and stores a reading for the one effective, active contract.
+     * An exact retry succeeds without changing the original row or reception time.
+     *
+     * @return array<string, string> The success or validation-error response body.
+     */
+    private function createReading(): array
     {
         $body = Yii::$app->request->bodyParams;
 
@@ -62,6 +89,7 @@ final class LecturaController extends Controller
             return $this->error(404, 'contract_not_found', 'No existe un contrato para ese CUPS.');
         }
 
+        // A CUPS can belong to successive contracts; both validity dates are inclusive.
         $validContracts = array_values(array_filter(
             $contracts,
             static fn (array $contract): bool =>
@@ -81,10 +109,12 @@ final class LecturaController extends Controller
 
         $contract = $validContracts[0];
 
+        // A cancelled contract rejects even historical readings within its validity dates.
         if ($contract['estado'] !== 'activo') {
             return $this->error(422, 'contract_inactive', 'El contrato está dado de baja.');
         }
 
+        // The reading is cumulative and must fit the contract's meter digit count.
         $maximum = (10 ** (int) $contract['digitos_contador']) - 1;
 
         if ($reading > $maximum) {
@@ -95,6 +125,7 @@ final class LecturaController extends Controller
             );
         }
 
+        // Keep the contract/date check and insert in one serializable, lock-protected transaction.
         $transaction = $db->beginTransaction(Transaction::SERIALIZABLE);
 
         try {
@@ -106,6 +137,7 @@ final class LecturaController extends Controller
             )->queryAll();
 
             if ($existing !== []) {
+                // The seed contains duplicates; every existing row must match an exact retry.
                 $sameReading = count(array_filter(
                         $existing,
                         static fn (array $row): bool =>
@@ -130,6 +162,7 @@ final class LecturaController extends Controller
                 );
             }
 
+            // Timestamp reception on SQL Server to keep it in UTC.
             $db->createCommand(
                 'INSERT INTO dbo.lecturas
                     (contrato_id, fecha_lectura, lectura_kwh, tipo, fecha_recepcion)
@@ -158,6 +191,11 @@ final class LecturaController extends Controller
         }
     }
 
+    /**
+     * Sets the HTTP status and builds the shared validation/error response shape.
+     *
+     * @return array{status: 'error', code: string, message: string}
+     */
     private function error(int $status, string $code, string $message): array
     {
         Yii::$app->response->statusCode = $status;

@@ -15,6 +15,8 @@ La API queda disponible en `http://localhost:8000`.
 
 En una clonación limpia, `vendor/` no está versionado. Es necesario ejecutar `composer install` antes de arrancar la aplicación. El arranque se ha comprobado desde un checkout limpio con este procedimiento.
 
+El servidor PHP integrado se inicia con cuatro workers para permitir comprobar reintentos concurrentes en este entorno de evaluación. Esta configuración es solo para desarrollo y pruebas; el servidor integrado de PHP no se recomienda para producción. La aplicación arranca con `YII_DEBUG=false` para no exponer trazas técnicas en las respuestas.
+
 ## Endpoint
 
 `POST /lecturas`
@@ -76,3 +78,5 @@ Una lectura nueva responde `201 Created`:
 - CUPS desconocido: `404 Not Found`.
 - Lectura superior a la capacidad del contador: `422 Unprocessable Entity`.
 - Tipo de lectura no admitido: `400 Bad Request`.
+- JSON malformado: `400 Bad Request` con el formato de error de la API y sin detalles internos.
+- Diez peticiones simultáneas con varios workers: una respuesta `201`, nueve respuestas `200` y una fila persistida.

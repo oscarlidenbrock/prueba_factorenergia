@@ -27,6 +27,10 @@ Este documento recoge manualmente el progreso en las dos partes de la prueba té
 - Confirmado que las filas iniciales 121 y 137 son duplicados exactos de contrato, fecha, valor y tipo; solo cambia `fecha_recepcion`.
 - Se creó `parte1/SOLUCION.md` con instrucciones, contrato HTTP, decisiones y comprobaciones.
 - En la comprobación desde un checkout limpio, `vendor/` no estaba disponible porque no se versiona. Se añadió `composer install --no-interaction --prefer-dist` antes de iniciar la aplicación y se confirmó el arranque y la petición HTTP.
+- Configurado el servidor PHP integrado con cuatro workers para la comprobación local de concurrencia; el servidor integrado se usa solo en desarrollo y pruebas.
+- Desactivado `YII_DEBUG` en el entry point para evitar filtrar trazas técnicas en respuestas.
+- El JSON malformado devuelve `400` con el formato de error propio de la API; se comprobó que no se exponen detalles internos.
+- Repetida la prueba de diez peticiones concurrentes con varios workers: una respondió `201`, nueve respondieron `200` y quedó una fila persistida.
 - Alcance de idempotencia: está comprobada para escrituras que pasan por este endpoint. Cualquier otro proceso que escriba directamente en `lecturas` debe aplicar una protección equivalente.
 
 ## Parte 2: Incidencia en la facturación

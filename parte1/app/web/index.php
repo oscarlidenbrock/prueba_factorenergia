@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-defined('YII_DEBUG') or define('YII_DEBUG', true);
+defined('YII_DEBUG') or define('YII_DEBUG', false);
 defined('YII_ENV') or define('YII_ENV', 'dev');
 
 require dirname(__DIR__) . '/vendor/autoload.php';
