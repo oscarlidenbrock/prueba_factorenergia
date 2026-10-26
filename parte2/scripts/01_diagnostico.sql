@@ -120,4 +120,40 @@ PRINT '9. Reclamaciones del periodo de incidencia';
 SELECT r.id, r.fecha, r.cliente_id, r.canal, r.texto
 FROM dbo.reclamaciones AS r
 ORDER BY r.fecha, r.id;
+
+PRINT '10. Clientes únicos afectados por la unión de las tres causas confirmadas';
+WITH ejecuciones_periodo AS (
+    SELECT id FROM dbo.log_procesos
+    WHERE proceso = 'FACTURACION_MENSUAL' AND parametros = @periodo
+), contratos_factura_duplicada AS (
+    SELECT f.contrato_id
+    FROM dbo.facturas AS f
+    WHERE f.periodo = @periodo
+      AND f.ejecucion_id IN (SELECT id FROM ejecuciones_periodo)
+    GROUP BY f.contrato_id
+    HAVING COUNT(*) > 1
+), contratos_lectura_duplicada AS (
+    SELECT contrato_id
+    FROM dbo.lecturas
+    WHERE fecha_hasta >= @inicio AND fecha_hasta <= @fin
+    GROUP BY contrato_id, fecha_desde, fecha_hasta, lectura_contador, consumo_kwh, tipo
+    HAVING COUNT(*) > 1
+), clientes_afectados AS (
+    SELECT DISTINCT c.cliente_id
+    FROM contratos_factura_duplicada AS d
+    JOIN dbo.contratos AS c ON c.id = d.contrato_id
+    UNION
+    SELECT DISTINCT c.cliente_id
+    FROM contratos_lectura_duplicada AS d
+    JOIN dbo.contratos AS c ON c.id = d.contrato_id
+    UNION
+    SELECT DISTINCT c.cliente_id
+    FROM dbo.facturas AS f
+    JOIN dbo.contratos AS c ON c.id = f.contrato_id
+    JOIN dbo.tarifas AS t ON t.id = c.tarifa_id
+    WHERE f.periodo = @periodo AND t.codigo = 'TEMPO_FIJA'
+      AND f.precio_kwh = 0.149000
+)
+SELECT COUNT(*) AS clientes_unicos_afectados
+FROM clientes_afectados;
 GO

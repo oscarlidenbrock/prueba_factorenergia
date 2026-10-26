@@ -1,10 +1,84 @@
-/* Sustituye el procedimiento de facturación por una versión conservadora.
-   - Serializa ejecuciones del mismo periodo.
-   - Ejecuta todas las facturas en una transacción.
-   - Rechaza periodos con facturas previas o lecturas exactas duplicadas.
-   - Rechaza meses con más de un precio aplicable; exige dato/prorrateo resuelto.
-   No corrige datos históricos ni reemplaza la carga idempotente de ficheros. */
+/* Prevención T-SQL:
+   1. La ingesta debe invocar sp_register_reading_once para que reintentar una
+      lectura idéntica no inserte otra fila y una revisión distinta quede en conflicto.
+   2. La facturación queda serializada, atómica y fail-closed ante estado previo,
+      lecturas duplicadas o precio que cambie dentro del mes.
+   El procedimiento de ingesta debe ser usado por el cargador; un INSERT directo
+   puede eludirlo. El prorrateo requiere una regla y consumos por tramo. */
 USE facturacion;
+GO
+CREATE OR ALTER PROCEDURE dbo.sp_register_reading_once
+    @contract_id int,
+    @period_start date,
+    @period_end date,
+    @meter_reading int,
+    @period_consumption decimal(12,3),
+    @reading_type varchar(10),
+    @source_file varchar(60)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    IF @period_end < @period_start OR @reading_type NOT IN ('real', 'estimada')
+        THROW 51001, 'Periodo o tipo de lectura inválido.', 1;
+
+    DECLARE @lock_result int;
+    DECLARE @lock_resource nvarchar(255) = CONCAT(
+        N'reading-', @contract_id, N'-', CONVERT(char(8), @period_start, 112),
+        N'-', CONVERT(char(8), @period_end, 112));
+    DECLARE @reading_id int;
+    DECLARE @was_repeat bit = 0;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        EXEC @lock_result = sys.sp_getapplock
+            @Resource = @lock_resource, @LockMode = 'Exclusive',
+            @LockOwner = 'Transaction', @LockTimeout = 10000;
+        IF @lock_result < 0
+            THROW 51002, 'No se pudo bloquear la clave de lectura para la ingesta.', 1;
+
+        /* Para un contrato y periodo solo se admite la misma lectura exacta.
+           Una corrección con valores distintos requiere resolución explícita. */
+        IF EXISTS (
+            SELECT 1
+            FROM dbo.lecturas WITH (UPDLOCK, HOLDLOCK)
+            WHERE contrato_id = @contract_id
+              AND fecha_desde = @period_start AND fecha_hasta = @period_end
+              AND (lectura_contador <> @meter_reading
+                   OR consumo_kwh <> @period_consumption
+                   OR tipo <> @reading_type)
+        )
+            THROW 51003, 'Ya hay una lectura distinta para el contrato y periodo; requiere revisión.', 1;
+
+        SELECT @reading_id = MIN(id)
+        FROM dbo.lecturas WITH (UPDLOCK, HOLDLOCK)
+        WHERE contrato_id = @contract_id
+          AND fecha_desde = @period_start AND fecha_hasta = @period_end
+          AND lectura_contador = @meter_reading
+          AND consumo_kwh = @period_consumption
+          AND tipo = @reading_type;
+
+        IF @reading_id IS NULL
+        BEGIN
+            INSERT INTO dbo.lecturas
+                (contrato_id, fecha_desde, fecha_hasta, lectura_contador,
+                 consumo_kwh, tipo, fichero_origen, fecha_carga)
+            VALUES
+                (@contract_id, @period_start, @period_end, @meter_reading,
+                 @period_consumption, @reading_type, @source_file, SYSDATETIME());
+            SET @reading_id = CONVERT(int, SCOPE_IDENTITY());
+        END
+        ELSE
+            SET @was_repeat = 1;
+
+        COMMIT TRANSACTION;
+        SELECT @reading_id AS reading_id, @was_repeat AS was_repeat;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
 GO
 CREATE OR ALTER PROCEDURE dbo.sp_facturar_periodo
     @periodo char(7)

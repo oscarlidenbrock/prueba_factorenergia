@@ -6,8 +6,8 @@ La prueba contiene dos ejercicios independientes:
 
 | Carpeta | Ejercicio |
 |---------|-----------|
-| `../parte1` | Construir una API en PHP para recibir lecturas de contador |
-| `../parte2` | Investigar una incidencia en la facturación sobre SQL Server |
+| `parte1` | Construir una API en PHP para recibir lecturas de contador |
+| `parte2` | Investigar una incidencia en la facturación sobre SQL Server |
 
 Los dos ejercicios se basan en la operativa de una comercializadora de electricidad. No necesitas conocer el sector: lo imprescindible está en el glosario y en el `README.md` de cada parte. Lo que no está explicado forma parte de las decisiones que esperamos que tomes.
 
@@ -56,3 +56,7 @@ Mantén las carpetas proporcionadas e incluye:
 - Instrucciones suficientes para ejecutar o reproducir el resultado.
 
 Las instrucciones concretas están en el `README.md` de cada carpeta.
+
+## Seguimiento del desarrollo
+
+El documento [docs/development.md](docs/development.md) resume el trabajo realizado en ambas partes, las comprobaciones ejecutadas y las decisiones técnicas. Es un registro de desarrollo; las instrucciones de entrega y ejecución de cada ejercicio están en sus respectivos documentos.
