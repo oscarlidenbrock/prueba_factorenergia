@@ -35,11 +35,17 @@ Este documento recoge manualmente el progreso en las dos partes de la prueba té
 
 ## Parte 2: Incidencia en la facturación
 
-- La Parte 2 no requirió desarrollar otra aplicación PHP: el entregable técnico consiste en consultas y cambios T-SQL, más el informe para Facturación.
 - Contrastados con consultas SQL los dos procesos de septiembre, las facturas de ambas ejecuciones, las 44 lecturas repetidas, los precios de tarifa y las reclamaciones.
-- Confirmados 61 contratos con facturas duplicadas, 44 grupos de lecturas exactas repetidas y 43 clientes/44 contratos afectados por `TEMPO_FIJA`.
-- Preparados `../parte2/scripts/01_diagnostico.sql`, `../parte2/scripts/02_correccion.sql`, `../parte2/scripts/03_prevencion.sql` y `../parte2/INFORME.md` en el paquete de entrega.
-- La corrección solo anula copias emitidas con IDs y aprobación explícitos; los registros originales se conservan y las facturas pagadas quedan para conciliación bancaria.
-- La prevención sustituye `dbo.sp_facturar_periodo`: serializa ejecuciones por periodo, hace atómica la generación y bloquea la facturación si ya existen facturas, si detecta lecturas exactas duplicadas o si no hay un precio único válido para todo el mes.
-- Ejecutados el diagnóstico y la vista previa en la base SQL Server de evaluación. La prevención se instaló y el reintento de septiembre devolvió el bloqueo esperado 51012; el recuento permaneció en 203 facturas antes y después. La vista previa no modificó facturas.
-- Se conserva sin cambios el registro histórico 30 (`EN_CURSO`) del timeout. Las regularizaciones de facturas pagadas, lecturas duplicadas y cambio de tarifa quedan sujetas a conciliación y decisiones de negocio.
+- Confirmados 61 contratos con facturas duplicadas, 44 grupos de lecturas exactas repetidas y 43 clientes/44 contratos afectados por `TEMPO_FIJA`. La unión de las tres causas comprende 94 clientes distintos; no implica que todos tengan una devolución cuantificada.
+- Entregados `parte2/scripts/01_diagnostico.sql`, `parte2/scripts/02_correccion.sql`, `parte2/scripts/03_prevencion.sql` y `parte2/INFORME.md`.
+- La corrección es condicionada: la vista previa no cambia datos permanentes y la vía de escritura requiere IDs y aprobación explícitos. No se ejecutó ninguna anulación; las facturas pagadas quedan para conciliación bancaria.
+- La prevención actual añade `dbo.sp_register_reading_once`, que hace idempotente la inserción de lecturas si el cargador lo invoca, y reemplaza `dbo.sp_facturar_periodo` con ejecución serializada y atómica. La facturación se bloquea ante facturas previas, lecturas repetidas o un precio que no cubre unívocamente el mes. El prorrateo del cambio de tarifa sigue pendiente de una regla de negocio y consumos por tramo.
+- Comprobaciones de versiones anteriores: el diagnóstico confirmó las causas principales; la vista previa no modificó facturas; la prevención bloqueó el reintento de septiembre con el error 51012 y el recuento se mantuvo en 203. Las revisiones actuales que agregan el total de 94 clientes, eliminan el DDL del modo de vista previa y añaden la ingesta idempotente aún deben ejecutarse en SQL Server.
+- Se conserva sin cambios el registro histórico 30 (`EN_CURSO`) del timeout.
+
+## Pendiente antes de cerrar
+
+- Repetir en SQL Server las versiones actuales de los tres scripts y verificar que el diagnóstico devuelve 94 clientes únicos.
+- Conectar el cargador de lecturas a `dbo.sp_register_reading_once`; los `INSERT` directos pueden eludir esa protección.
+- Acordar los datos/regla de prorrateo para tarifas con cambios dentro del periodo y conciliar facturas pagadas antes de cualquier regularización.
+- Revisar `SiteController::actionIndex`: la ruta `GET /` aún devuelve el recuento de contratos; sustituirlo por un estado de salud sin datos del dominio o retirar la ruta.
