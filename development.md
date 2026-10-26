@@ -22,13 +22,12 @@ Este documento recoge manualmente el progreso en las dos partes de la prueba té
 - Un envío nuevo respondió `201 Created`.
 - Un reintento idéntico no generó otra lectura y respondió como duplicado.
 - Un valor distinto para el mismo contrato y fecha respondió `409 Conflict`.
+- Prueba de diez peticiones simultáneas idénticas: una respondió `201`, nueve respondieron `200` y la base de datos conservó una sola fila.
 - Se comprobaron los rechazos de contrato dado de baja, fecha fuera de vigencia, fecha futura, CUPS desconocido, lectura fuera de rango y tipo no admitido.
+- Confirmado que las filas iniciales 121 y 137 son duplicados exactos de contrato, fecha, valor y tipo; solo cambia `fecha_recepcion`.
 - Se creó `parte1/SOLUCION.md` con instrucciones, contrato HTTP, decisiones y comprobaciones.
-
-### Pendiente
-
-- Revisar el tratamiento de duplicados presentes en los datos iniciales y dejar claramente documentado el alcance de la garantía de idempotencia.
-- Revisar si hacen falta comprobaciones adicionales y confirmar que todas las instrucciones de ejecución reproducen el entorno desde una clonación limpia.
+- En la comprobación desde un checkout limpio, `vendor/` no estaba disponible porque no se versiona. Se añadió `composer install --no-interaction --prefer-dist` antes de iniciar la aplicación y se confirmó el arranque y la petición HTTP.
+- Alcance de idempotencia: está comprobada para escrituras que pasan por este endpoint. Cualquier otro proceso que escriba directamente en `lecturas` debe aplicar una protección equivalente.
 
 ## Parte 2: Incidencia en la facturación
 

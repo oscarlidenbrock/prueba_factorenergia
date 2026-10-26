@@ -6,10 +6,14 @@ Desde `parte1/`, inicia la base de datos y la aplicación:
 
 ```bash
 docker compose up -d db db-init
-docker compose up -d --build app
+docker compose build app
+docker compose run --rm --no-deps app composer install --no-interaction --prefer-dist
+docker compose up -d app
 ```
 
 La API queda disponible en `http://localhost:8000`.
+
+En una clonación limpia, `vendor/` no está versionado. Es necesario ejecutar `composer install` antes de arrancar la aplicación. El arranque se ha comprobado desde un checkout limpio con este procedimiento.
 
 ## Endpoint
 
@@ -56,14 +60,15 @@ Una lectura nueva responde `201 Created`:
 - Se rechazan fechas futuras. La fecha de recepción se guarda en UTC.
 - `lectura_kwh` es un valor acumulado entero. Se valida que no supere el máximo indicado por `digitos_contador`.
 - Un reintento idéntico para el mismo contrato y fecha responde `200 OK` y no inserta otra fila. Si cambia el valor o el tipo, responde `409 Conflict`; la API no sustituye una lectura existente.
-- La comprobación y el alta se realizan en una transacción serializable, con bloqueos sobre la búsqueda de lecturas para reducir duplicados por peticiones concurrentes.
-- Los datos iniciales ya contienen lecturas duplicadas. La solución conserva los datos proporcionados y no crea una restricción única que falle al inicializarse por esas filas. La protección descrita aplica a las escrituras realizadas por este endpoint.
+- La comprobación y el alta se realizan en una transacción serializable, con bloqueos sobre la búsqueda de lecturas. Se comprobó con diez peticiones simultáneas idénticas: una respondió `201`, nueve respondieron `200` y quedó una sola fila.
+- Los datos iniciales ya contienen un duplicado exacto: las filas 121 y 137 comparten contrato, fecha, valor y tipo; solo cambia la fecha de recepción. La solución conserva los datos y no crea una restricción única que impida cargar el seed. La idempotencia verificada aplica a las escrituras realizadas por este endpoint; otros procesos que escriban directamente en la tabla deben aplicar una protección equivalente.
 - Esta versión no implementa autenticación, importación por lotes ni regularización de lecturas estimadas. Se pueden añadir cuando se definan los requisitos de integración y las reglas de negocio correspondientes.
 
 ## Comprobaciones realizadas
 
 - Lectura válida: `201 Created`.
 - Reintento idéntico: `200 OK`, sin duplicar la fila.
+- Diez reintentos simultáneos idénticos: una respuesta `201`, nueve respuestas `200` y una fila persistida.
 - Mismo contrato y fecha con distinto valor: `409 Conflict`.
 - Contrato dado de baja: `422 Unprocessable Entity`.
 - Fecha fuera de vigencia: `422 Unprocessable Entity`.
