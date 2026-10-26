@@ -1,0 +1,39 @@
+name: prueba-php-parte2
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "Prueba.Tecnica.2026"
+    ports:
+      - "14332:1433"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -b -Q 'SELECT 1' -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # Carga db/init.sql la primera vez (si la base de datos 'facturacion' no existe).
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      MSSQL_SA_PASSWORD: "Prueba.Tecnica.2026"
+    volumes:
+      - ./db/init.sql:/init/init.sql:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        SQLCMD="/opt/mssql-tools18/bin/sqlcmd -S db -U sa -P $$MSSQL_SA_PASSWORD -C -b -I -f 65001"
+        if [ "$$($$SQLCMD -h -1 -W -Q "SET NOCOUNT ON; SELECT DB_ID('facturacion')")" != "NULL" ]; then
+          echo "La base de datos 'facturacion' ya existe: no se vuelve a cargar."
+          exit 0
+        fi
+        $$SQLCMD -i /init/init.sql && echo "Base de datos 'facturacion' cargada."

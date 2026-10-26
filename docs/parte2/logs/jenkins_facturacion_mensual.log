@@ -1,0 +1,36 @@
+================================================================================
+facturacion-mensual #47
+================================================================================
+Started by timer
+Running as SYSTEM
+Building in workspace /var/lib/jenkins/workspace/facturacion-mensual
+[facturacion-mensual] $ /bin/bash /tmp/jenkins8812736401528310492.sh
++ cd /var/www/facturacion
++ php yii facturacion/mensual --periodo=2026-08
+2026-09-05 02:00:03 [info][facturacion] Inicio de la facturación del periodo 2026-08
+2026-09-05 02:00:03 [info][facturacion] EXEC dbo.sp_facturar_periodo @periodo = '2026-08'
+2026-09-05 02:01:33 [info][facturacion] Facturación del periodo 2026-08 finalizada
+Finished: SUCCESS
+
+================================================================================
+facturacion-mensual #48
+================================================================================
+Started by timer
+Running as SYSTEM
+Building in workspace /var/lib/jenkins/workspace/facturacion-mensual
+[facturacion-mensual] $ /bin/bash /tmp/jenkins3077215648812290347.sh
++ cd /var/www/facturacion
++ php yii facturacion/mensual --periodo=2026-09
+2026-10-05 02:00:03 [info][facturacion] Inicio de la facturación del periodo 2026-09
+2026-10-05 02:00:03 [info][facturacion] EXEC dbo.sp_facturar_periodo @periodo = '2026-09'
+2026-10-05 02:45:03 [error][yii\db\Exception] SQLSTATE[HYT00]: [Microsoft][ODBC Driver 18 for SQL Server]Query timeout expired
+The SQL being executed was: EXEC dbo.sp_facturar_periodo @periodo = '2026-09'
+Error Info: Array
+(
+    [0] => HYT00
+    [1] => 0
+    [2] => [Microsoft][ODBC Driver 18 for SQL Server]Query timeout expired
+)
+Build step 'Execute shell' marked build as failure
+Sending e-mail to: facturacion-alertas@example.com
+Finished: FAILURE
